@@ -1,0 +1,9 @@
+{
+  "name": "event-management-system",
+  "version": "1.0.0",
+  "description": "Event Management System with PHP backend",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  }
+}
