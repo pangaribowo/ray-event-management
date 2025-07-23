@@ -14,15 +14,57 @@ if ($isLocal) {
 } else {
     // PostgreSQL untuk production (Supabase)
     try {
-        $dsn = "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName";
-        $dbConn = new PDO($dsn, $dbUser, $dbPass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ]);
+        // Try multiple connection approaches for better compatibility
+        $connectionAttempts = [
+            // Attempt 1: With SSL required (recommended for Supabase)
+            "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName;sslmode=require",
+            // Attempt 2: With SSL prefer (fallback)
+            "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName;sslmode=prefer",
+            // Attempt 3: Without SSL (last resort)
+            "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName"
+        ];
+        
+        $lastException = null;
+        $dbConn = null;
+        
+        foreach ($connectionAttempts as $dsn) {
+            try {
+                $dbConn = new PDO($dsn, $dbUser, $dbPass, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_TIMEOUT => 30, // 30 seconds timeout
+                ]);
+                
+                // Test the connection with a simple query
+                $dbConn->query("SELECT 1");
+                break; // Success, exit the loop
+                
+            } catch (PDOException $e) {
+                $lastException = $e;
+                $dbConn = null;
+                continue; // Try next connection method
+            }
+        }
+        
+        if (!$dbConn) {
+            // All connection attempts failed
+            throw $lastException;
+        }
+        
         $dbType = 'postgresql';
+        
     } catch (PDOException $e) {
-        die("Koneksi Database Gagal: " . $e->getMessage());
+        // Enhanced error message with debugging info
+        $errorMsg = "Koneksi Database Gagal: " . $e->getMessage();
+        $errorMsg .= "\n\nDebugging Info:";
+        $errorMsg .= "\n- Host: $dbHost";
+        $errorMsg .= "\n- Port: " . getEnv('DB_PORT', '5432');
+        $errorMsg .= "\n- Database: $dbName";
+        $errorMsg .= "\n- User: $dbUser";
+        $errorMsg .= "\n- Environment: " . getEnv('APP_ENV', 'unknown');
+        
+        die($errorMsg);
     }
 }
 

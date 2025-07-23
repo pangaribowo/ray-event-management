@@ -17,6 +17,10 @@
       }
     },
     {
+      "src": "/test-db-connection.php",
+      "dest": "/api/app.php?route=test-db"
+    },
+    {
       "src": "/login.php(.*)",
       "dest": "/api/app.php?route=login$1"
     },

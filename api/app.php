@@ -34,6 +34,16 @@ chdir(dirname(__DIR__));
 
 // Handle different routes
 switch ($route) {
+    case 'test-db':
+        // Include database test file
+        if (file_exists('test-db-connection.php')) {
+            include 'test-db-connection.php';
+        } else {
+            http_response_code(404);
+            echo "Database test file not found";
+        }
+        break;
+        
     case 'login':
         // Include login.php
         if (file_exists('login.php')) {
