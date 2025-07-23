@@ -1,10 +1,15 @@
 <?php 
+// Start output buffering to prevent any accidental output
+ob_start();
 
 require_once '../library/config.php';
 require_once '../library/functions.php';
 require_once '../library/mail.php';
 
-session_start();
+// Start session if not already started
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 $cmd = isset($_GET['cmd']) ? $_GET['cmd'] : '';
 
@@ -27,6 +32,14 @@ switch($cmd) {
 
   case 'addnotes':
     addNotes();
+    break;
+
+  case 'user':
+    getUserData();
+    break;
+
+  case 'calview':
+    getCalendarEvents();
     break;
 
   default:
@@ -134,15 +147,91 @@ function createBlock() {
   $picEmail     = $pic['email'] ?? '';
   $picFax       = $pic['fax'] ?? '';
 
-  $sql = "INSERT INTO business_blocks_id 
-          (block_name, account_type, account_name, alamat, telepon, owner_event, date_start, date_end, revenue_room, revenue_catering, status, 
-           pic_first_name, pic_last_name, pic_position, pic_alamat, pic_telepon, pic_email, pic_fax)
+  $sql = "INSERT INTO tbl_business_blocks 
+          (block_name, account_type, account_name, address, phone, owner_event, start_date, end_date, revenue_room, revenue_catering, status, owner_id)
           VALUES 
           ('$blockName', '$accountType', '$accountName', '$alamat', '$telepon', '$ownerEvent', '$dateStart', '$dateEnd', 
-           '$revenueRoom', '$revenueCat', '$status',
-           '$picFirstName', '$picLastName', '$picPosition', '$picAlamat', '$picTelepon', '$picEmail', '$picFax')";
+           '$revenueRoom', '$revenueCat', '$status', 1)";
   dbQuery($sql);
 
   header('Location: ../views/?v=BLOCK_LIST&msg=' . urlencode('Block ID berhasil ditambahkan.'));
+  exit();
+}
+
+function getUserData() {
+  // Clear any previous output
+  ob_clean();
+  
+  // Set JSON header
+  header('Content-Type: application/json');
+  
+  $userId = isset($_GET['userId']) ? (int)$_GET['userId'] : 0;
+  
+  if ($userId <= 0) {
+    echo json_encode(['error' => 'Invalid user ID']);
+    exit();
+  }
+  
+  try {
+    $sql = "SELECT id as user_id, name, email, phone as phone_no, address 
+            FROM tbl_users WHERE id = $userId";
+    $result = dbQuery($sql);
+    
+    if ($row = dbFetchAssoc($result)) {
+      echo json_encode($row);
+    } else {
+      echo json_encode(['error' => 'User not found']);
+    }
+  } catch (Exception $e) {
+    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+  }
+  
+  exit();
+}
+
+function getCalendarEvents() {
+  // Clear any previous output
+  ob_clean();
+  
+  // Set JSON header
+  header('Content-Type: application/json');
+  
+  $start = $_POST['start'] ?? '';
+  $end = $_POST['end'] ?? '';
+  
+  try {
+    // Query to get events from database
+    $sql = "SELECT 
+              id,
+              event_name as title,
+              start_datetime as start,
+              end_datetime as end,
+              'false' as allDay,
+              '#3c8dbc' as backgroundColor,
+              '#367fa9' as borderColor
+            FROM event_bookings 
+            WHERE start_datetime >= '$start' AND end_datetime <= '$end'
+            ORDER BY start_datetime";
+    
+    $result = dbQuery($sql);
+    $events = [];
+    
+    while ($row = dbFetchAssoc($result)) {
+      $events[] = [
+        'id' => $row['id'],
+        'title' => $row['title'],
+        'start' => $row['start'],
+        'end' => $row['end'],
+        'allDay' => false,
+        'backgroundColor' => '#3c8dbc',
+        'borderColor' => '#367fa9'
+      ];
+    }
+    
+    echo json_encode($events);
+  } catch (Exception $e) {
+    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+  }
+  
   exit();
 }
