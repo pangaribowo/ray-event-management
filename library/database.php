@@ -107,11 +107,15 @@ if ($isLocal) {
         // Enhanced error message with debugging info
         $errorMsg = "Koneksi Database Gagal: " . $e->getMessage();
         $errorMsg .= "\n\nDebugging Info:";
+        $errorMsg .= "\n- Connection Strategy: " . getEnv('DB_CONNECTION_STRATEGY', 'not_set');
         $errorMsg .= "\n- Host: $dbHost";
         $errorMsg .= "\n- Port: " . getEnv('DB_PORT', '5432');
         $errorMsg .= "\n- Database: $dbName";
         $errorMsg .= "\n- User: $dbUser";
+        $errorMsg .= "\n- Pooler Host: " . getEnv('DB_POOLER_HOST', 'not_set');
+        $errorMsg .= "\n- Pooler User: " . getEnv('DB_POOLER_USER', 'not_set');
         $errorMsg .= "\n- Environment: " . getEnv('APP_ENV', 'unknown');
+        $errorMsg .= "\n- Attempted Connections: " . count($connectionAttempts ?? []);
         
         die($errorMsg);
     }
