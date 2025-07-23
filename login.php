@@ -1,4 +1,7 @@
 <?php
+// Set explicit content type header
+header('Content-Type: text/html; charset=UTF-8');
+
 require_once './library/config.php';
 require_once './library/functions.php';
 
