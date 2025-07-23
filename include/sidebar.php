@@ -1,7 +1,12 @@
 <!-- sidebar: style can be found in sidebar.less -->
 <section class="sidebar">
-  <ul class="sidebar-menu">
-    <li class="header">MAIN NAVIGATION</li>
+    		<ul class="sidebar-menu">
+        <li class="header">MAIN NAVIGATION</li>
+        <li class="treeview">
+            <a href="<?php echo WEB_ROOT; ?>index.php">
+                <i class="fa fa-home"></i> <span>Dashboard</span>
+            </a>
+        </li>
     <li class="treeview"> 
 		<a href="<?php echo WEB_ROOT; ?>views/?v=DB"><i class="fa fa-calendar"></i><span>Events Calendar</span></a>
 	</li>
