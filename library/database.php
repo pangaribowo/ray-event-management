@@ -14,15 +14,27 @@ if ($isLocal) {
 } else {
     // PostgreSQL untuk production (Supabase)
     try {
-        // Try multiple connection approaches for better compatibility
-        $connectionAttempts = [
-            // Attempt 1: With SSL required (recommended for Supabase)
-            "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName;sslmode=require",
-            // Attempt 2: With SSL prefer (fallback)
-            "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName;sslmode=prefer",
-            // Attempt 3: Without SSL (last resort)
-            "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName"
-        ];
+        // Extract project ref from host for pooler connection
+        $projectRef = '';
+        if (preg_match('/db\.([a-zA-Z0-9]+)\.supabase\.co/', $dbHost, $matches)) {
+            $projectRef = $matches[1];
+        }
+        
+        // Try multiple connection approaches for better compatibility with Vercel
+        $connectionAttempts = [];
+        
+        // For Supabase, try pooler connections first (better for serverless)
+        if ($projectRef) {
+            $connectionAttempts[] = "pgsql:host=aws-0-us-east-1.pooler.supabase.com;port=5432;dbname=$dbName;sslmode=require";
+            $connectionAttempts[] = "pgsql:host=aws-0-us-east-1.pooler.supabase.com;port=6543;dbname=$dbName;sslmode=require";
+            $connectionAttempts[] = "pgsql:host=aws-0-us-west-2.pooler.supabase.com;port=5432;dbname=$dbName;sslmode=require";
+            $connectionAttempts[] = "pgsql:host=aws-0-us-west-2.pooler.supabase.com;port=6543;dbname=$dbName;sslmode=require";
+        }
+        
+        // Fallback to direct connection
+        $connectionAttempts[] = "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName;sslmode=require";
+        $connectionAttempts[] = "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName;sslmode=prefer";
+        $connectionAttempts[] = "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName";
         
         $lastException = null;
         $dbConn = null;

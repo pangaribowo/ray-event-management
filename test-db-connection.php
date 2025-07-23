@@ -10,7 +10,7 @@ $env_vars = [
     'DB_HOST' => 'db.ckzwvxjamosagksbylkh.supabase.co',
     'DB_PORT' => '5432',
     'DB_NAME' => 'postgres',
-    'DB_USER' => 'postgres',
+    'DB_USER' => 'postgres.ckzwvxjamosagksbylkh', // Pooler format
     'DB_PASSWORD' => 'z2smcCeHM2T5k33o'
 ];
 
@@ -119,6 +119,52 @@ try {
     ]);
     
     echo "✅ <span style='color: green;'>Connection successful (URI format)</span><br>";
+    
+} catch (PDOException $e) {
+echo "❌ <span style='color: red;'>Connection failed: " . $e->getMessage() . "</span><br>";
+}
+
+// Test 5: Pooler Connection (Port 5432)
+echo "<h4>Test 5: Pooler Connection (Port 5432)</h4>";
+try {
+    $dsn = "pgsql:host=aws-0-us-east-1.pooler.supabase.com;port=5432;dbname={$env_vars['DB_NAME']};sslmode=require";
+    echo "<strong>DSN:</strong> $dsn<br>";
+    
+    $pdo = new PDO($dsn, $env_vars['DB_USER'], $env_vars['DB_PASSWORD'], [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ]);
+    
+    echo "✅ <span style='color: green;'>Connection successful (Pooler 5432)</span><br>";
+    
+    // Test query
+    $result = $pdo->query("SELECT version()");
+    $version = $result->fetch();
+    echo "<strong>PostgreSQL Version:</strong> " . $version['version'] . "<br>";
+    
+} catch (PDOException $e) {
+    echo "❌ <span style='color: red;'>Connection failed: " . $e->getMessage() . "</span><br>";
+}
+
+// Test 6: Pooler Connection (Port 6543)
+echo "<h4>Test 6: Pooler Connection (Port 6543)</h4>";
+try {
+    $dsn = "pgsql:host=aws-0-us-east-1.pooler.supabase.com;port=6543;dbname={$env_vars['DB_NAME']};sslmode=require";
+    echo "<strong>DSN:</strong> $dsn<br>";
+    
+    $pdo = new PDO($dsn, $env_vars['DB_USER'], $env_vars['DB_PASSWORD'], [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ]);
+    
+    echo "✅ <span style='color: green;'>Connection successful (Pooler 6543)</span><br>";
+    
+    // Test query
+    $result = $pdo->query("SELECT version()");
+    $version = $result->fetch();
+    echo "<strong>PostgreSQL Version:</strong> " . $version['version'] . "<br>";
     
 } catch (PDOException $e) {
     echo "❌ <span style='color: red;'>Connection failed: " . $e->getMessage() . "</span><br>";
