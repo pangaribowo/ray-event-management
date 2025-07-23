@@ -1,20 +1,78 @@
 <?php
 ini_set('display_errors', 'on');
-//ob_start("ob_gzhandler");
-//error_reporting(E_ALL);
+
+// Load environment variables from .env file (simple parser)
+if (file_exists(__DIR__ . '/../.env')) {
+    $lines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue; // Skip comments
+        }
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+            putenv(sprintf('%s=%s', $name, $value));
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+}
 
 // start the session
-session_start();
-
-// database connection config
-
-$dbHost = 'localhost';
-if (getenv('DOCKERIZED')) {
-    $dbHost = 'db'; // gunakan service name MySQL di docker-compose
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
-$dbUser = 'root';
-$dbPass = '';
-$dbName = 'db_event_projek';
+
+// Enhanced environment variable function
+if (!function_exists('getEnv')) {
+    function getEnv($key, $default = null) {
+        // Check $_ENV first (for Vercel)
+        if (isset($_ENV[$key])) {
+            return $_ENV[$key];
+        }
+        
+        // Check $_SERVER (for some hosting providers)
+        if (isset($_SERVER[$key])) {
+            return $_SERVER[$key];
+        }
+        
+        // Check getenv() as fallback
+        $value = getenv($key);
+        return $value !== false ? $value : $default;
+    }
+}
+
+// Determine environment
+$appEnv = getEnv('APP_ENV', 'development');
+$isProduction = ($appEnv === 'production');
+$isLocal = ($appEnv === 'development');
+
+// Set error reporting based on environment
+if ($isProduction) {
+    ini_set('display_errors', 'off');
+    error_reporting(0);
+} else {
+    ini_set('display_errors', 'on');
+    error_reporting(E_ALL);
+}
+
+// Database connection config
+if ($isLocal) {
+    // Local development (MySQL)
+    $dbHost = getEnv('DB_HOST_LOCAL', 'db');
+    $dbUser = getEnv('DB_USER_LOCAL', 'root');
+    $dbPass = getEnv('DB_PASSWORD_LOCAL', 'root');
+    $dbName = getEnv('DB_NAME_LOCAL', 'db_event_projek');
+    $dbPort = getEnv('DB_PORT_LOCAL', '3306');
+} else {
+    // Production (PostgreSQL via Supabase)
+    $dbHost = getEnv('DB_HOST');
+    $dbUser = getEnv('DB_USER', 'postgres');
+    $dbPass = getEnv('DB_PASSWORD');
+    $dbName = getEnv('DB_NAME', 'postgres');
+    $dbPort = getEnv('DB_PORT', '5432');
+}
 
 /*
 $dbHost = 'localhost';
