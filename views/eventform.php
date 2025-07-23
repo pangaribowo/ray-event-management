@@ -13,7 +13,7 @@
   </div>
   <!-- /.box-header -->
   <!-- form start -->
-  <form role="form" action="<?php echo WEB_ROOT; ?>views/process.php?cmd=addnotes" method="post">
+<form role="form" action="<?php echo WEB_ROOT; ?>views/process.php?cmd=create_event" method="post">
     <div class="box-body">
       <div class="form-group">
         <label for="exampleInputEmail1">Owner</label>
@@ -45,8 +45,17 @@
 
 	  <div class="form-group">
     <label for="block_id">Block ID</label>
-    <input type="text" name="block_id" class="form-control input-sm" placeholder="Enter Block ID" id="block_id" required>
-    <span class="textfieldRequiredMsg">Block ID is required.</span>
+    <select name="block_id" id="block_id" class="form-control input-sm" required>
+        <option value="">-- Select Business Block --</option>
+        <?php
+        $sql = "SELECT id, block_name, account_name FROM tbl_business_blocks WHERE status = 'ACT' ORDER BY block_name";
+        $result = dbQuery($sql);
+        while ($row = dbFetchAssoc($result)) {
+            echo '<option value="' . $row['id'] . '">' . $row['block_name'] . ' - ' . $row['account_name'] . '</option>';
+        }
+        ?>
+    </select>
+    <span class="selectRequiredMsg">Block ID is required.</span>
 </div>
 
 <div class="form-group">
@@ -94,7 +103,7 @@
       	<div class="col-xs-6">
 			<label>Date End</label>
 			<span id="sprytf_edate">
-        	<input type="date" name="start_date" id="edate" class="form-control input-sm" required>
+        	<input type="date" name="end_date" id="edate" class="form-control input-sm" required>
 			<span class="textfieldRequiredMsg">Date is required.</span>
 			<span class="textfieldInvalidFormatMsg">Invalid date Format.</span>
 			</span>
@@ -119,14 +128,14 @@
       </div>
 	  <div class="form-group">
     <label for="rentalOption">Rental</label>
-    <input type="hidden" name="owner_id" value="" id="userId" />
+    <input type="hidden" name="owner_id" value="" id="ownerId" />
     <input type="hidden" name="owner_name" id="ownerName" />
     
     <div id="sprytf_name">
         <select name="rental" id="rentalOption" class="form-control input-sm">
             <option value="">-- Select Option --</option>
-            <option value="include">Include</option>
-            <option value="exclude">Exclude</option>
+            <option value="Include">Include</option>
+            <option value="Exclude">Exclude</option>
         </select>
         <span class="selectRequiredMsg">Rental selection is required.</span>
     </div>
@@ -142,7 +151,7 @@
 <script type="text/javascript">
 <!--
 var sprytf_name 	= new Spry.Widget.ValidationSelect("sprytf_name");
-var sprytf_address 	= new Spry.Widget.ValidationTextarea("sprytf_address", {minChars:6, isRequired:true, validateOn:["blur", "change"]});
+// var sprytf_address 	= new Spry.Widget.ValidationTextarea("sprytf_address", {minChars:6, isRequired:true, validateOn:["blur", "change"]});
 var sprytf_phone 	= new Spry.Widget.ValidationTextField("sprytf_phone", 'none', {validateOn:["blur", "change"]});
 var sprytf_mail 	= new Spry.Widget.ValidationTextField("sprytf_email", 'email', {validateOn:["blur", "change"]});
 var sprytf_sdate 	= new Spry.Widget.ValidationTextField("sprytf_sdate", "date", {format:"yyyy-mm-dd", useCharacterMasking: true, validateOn:["blur", "change"]});
@@ -154,16 +163,59 @@ var sprytf_ucount 	= new Spry.Widget.ValidationTextField("sprytf_ucount", "integ
 </script>
 
 <script type="text/javascript">
-$('select').on('change', function() {
-	//alert( this.value );
+// Only target the Owner select dropdown, not all select elements
+$('select[name="name"]').on('change', function() {
 	var id = this.value;
+	
+	// Skip if no ID selected or it's the default option
+	if (!id || id === '' || id === '--Select Sales--') {
+		$('#userId').val('');
+		$('#ownerId').val('');
+		$('#ownerName').val('');
+		return;
+	}
+	
+	// Check if the value is a valid number (user ID)
+	if (isNaN(id)) {
+		console.log('Selected value is not a user ID:', id);
+		return;
+	}
+	
 	$.get('<?php echo WEB_ROOT. 'api/process.php?cmd=user&userId=' ?>'+id, function(data, status){
-		var obj = $.parseJSON(data);
-		$('#userId').val(obj.user_id);
-		$('#email').val(obj.email);
-		$('#address').val(obj.address);
-		$('#phone').val(obj.phone_no);
+		try {
+			// Check if data starts with HTML error tags
+			if (typeof data === 'string' && data.indexOf('<') === 0) {
+				console.error('Server returned HTML instead of JSON:', data);
+				alert('Server error occurred. Please check the console for details.');
+				return;
+			}
+			
+			var obj;
+			if (typeof data === 'string') {
+				obj = $.parseJSON(data);
+			} else {
+				obj = data; // Already parsed
+			}
+			
+			if (obj.error) {
+				console.error('Server error:', obj.error);
+				alert('Error: ' + obj.error);
+				return;
+			}
+			
+			$('#userId').val(obj.user_id || '');
+			$('#ownerId').val(obj.user_id || '');
+			$('#ownerName').val(obj.name || '');
+			
+		} catch (e) {
+			console.error('JSON Parse Error:', e);
+			console.error('Response data:', data);
+			alert('Error parsing server response. Please check the console for details.');
+		}
+	}).fail(function(xhr, status, error) {
+		console.error('AJAX Error:', status, error);
+		alert('Failed to load user data: ' + error);
 	});
 	
-})
+});
 </script>
