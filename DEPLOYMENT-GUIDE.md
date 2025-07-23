@@ -14,7 +14,7 @@
 ### 1.1 Buat Project Supabase
 1. Kunjungi [supabase.com](https://supabase.com)
 2. Klik **"Start your project"** → **"New project"**
-3. Pilih organisation atau buat baru
+3. Pilih organisasi atau buat baru
 4. Isi project details:
    - **Name**: `event-management-db`
    - **Database Password**: Buat password kuat (simpan baik-baik!)
