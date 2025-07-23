@@ -124,11 +124,12 @@ try {
 echo "❌ <span style='color: red;'>Connection failed: " . $e->getMessage() . "</span><br>";
 }
 
-// Test 5: Pooler Connection (Port 5432)
+// Test 5: Pooler Connection (Port 5432) 
 echo "<h4>Test 5: Pooler Connection (Port 5432)</h4>";
 try {
     $dsn = "pgsql:host=aws-0-us-east-1.pooler.supabase.com;port=5432;dbname={$env_vars['DB_NAME']};sslmode=require";
     echo "<strong>DSN:</strong> $dsn<br>";
+    echo "<strong>User:</strong> {$env_vars['DB_USER']}<br>";
     
     $pdo = new PDO($dsn, $env_vars['DB_USER'], $env_vars['DB_PASSWORD'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -152,6 +153,7 @@ echo "<h4>Test 6: Pooler Connection (Port 6543)</h4>";
 try {
     $dsn = "pgsql:host=aws-0-us-east-1.pooler.supabase.com;port=6543;dbname={$env_vars['DB_NAME']};sslmode=require";
     echo "<strong>DSN:</strong> $dsn<br>";
+    echo "<strong>User:</strong> {$env_vars['DB_USER']}<br>";
     
     $pdo = new PDO($dsn, $env_vars['DB_USER'], $env_vars['DB_PASSWORD'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -165,6 +167,48 @@ try {
     $result = $pdo->query("SELECT version()");
     $version = $result->fetch();
     echo "<strong>PostgreSQL Version:</strong> " . $version['version'] . "<br>";
+    
+} catch (PDOException $e) {
+    echo "❌ <span style='color: red;'>Connection failed: " . $e->getMessage() . "</span><br>";
+}
+
+// Test 7: Direct connection with different user format
+echo "<h4>Test 7: Direct Connection (Simple User)</h4>";
+try {
+    $simpleUser = 'postgres';
+    $dsn = "pgsql:host={$env_vars['DB_HOST']};port={$env_vars['DB_PORT']};dbname={$env_vars['DB_NAME']};sslmode=require";
+    echo "<strong>DSN:</strong> $dsn<br>";
+    echo "<strong>User:</strong> $simpleUser<br>";
+    
+    $pdo = new PDO($dsn, $simpleUser, $env_vars['DB_PASSWORD'], [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ]);
+    
+    echo "✅ <span style='color: green;'>Connection successful</span><br>";
+    
+} catch (PDOException $e) {
+    echo "❌ <span style='color: red;'>Connection failed: " . $e->getMessage() . "</span><br>";
+}
+
+// Test 8: Supabase Pooler with project-specific endpoint
+echo "<h4>Test 8: Supabase Project-Specific Pooler</h4>";
+try {
+    // Extract project ID from DB_HOST
+    $projectId = 'ckzwvxjamosagksbylkh';
+    $poolerHost = "$projectId.pooler.supabase.com";
+    $dsn = "pgsql:host=$poolerHost;port=6543;dbname={$env_vars['DB_NAME']};sslmode=require";
+    echo "<strong>DSN:</strong> $dsn<br>";
+    echo "<strong>User:</strong> {$env_vars['DB_USER']}<br>";
+    
+    $pdo = new PDO($dsn, $env_vars['DB_USER'], $env_vars['DB_PASSWORD'], [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ]);
+    
+    echo "✅ <span style='color: green;'>Connection successful</span><br>";
     
 } catch (PDOException $e) {
     echo "❌ <span style='color: red;'>Connection failed: " . $e->getMessage() . "</span><br>";
