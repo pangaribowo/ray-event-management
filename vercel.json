@@ -1,29 +1,13 @@
 {
   "version": 2,
   "functions": {
-    "*.php": {
-      "runtime": "vercel-php@0.6.0"
-    },
     "api/*.php": {
-      "runtime": "vercel-php@0.6.0"
-    },
-    "views/*.php": {
-      "runtime": "vercel-php@0.6.0"
-    },
-    "include/*.php": {
-      "runtime": "vercel-php@0.6.0"
-    },
-    "library/*.php": {
       "runtime": "vercel-php@0.6.0"
     }
   },
   "routes": [
     {
-      "src": "/",
-      "dest": "/index.php"
-    },
-    {
-      "src": "/api/(.*\\.php)",
+      "src": "/api/(.*)",
       "dest": "/api/$1"
     },
     {
@@ -33,12 +17,20 @@
       }
     },
     {
-      "src": "/(.*\\.php)",
-      "dest": "/$1"
+      "src": "/login.php(.*)",
+      "dest": "/api/app.php?route=login$1"
+    },
+    {
+      "src": "/index.php(.*)",
+      "dest": "/api/app.php?route=index$1"
+    },
+    {
+      "src": "/",
+      "dest": "/api/app.php?route=index"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.php"
+      "dest": "/api/app.php?route=index&path=$1"
     }
   ]
 }
