@@ -21,7 +21,6 @@ db_data/
 # PHP
 vendor/
 composer.phar
-composer.lock
 .phpunit.result.cache
 phpunit.xml
 

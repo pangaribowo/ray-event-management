@@ -43,6 +43,9 @@ RUN echo "upload_max_filesize = 100M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "session.cookie_secure = 0" >> /usr/local/etc/php/conf.d/security.ini \
     && echo "session.use_strict_mode = 1" >> /usr/local/etc/php/conf.d/security.ini
 
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 # Set working directory
 WORKDIR /var/www/html
 
