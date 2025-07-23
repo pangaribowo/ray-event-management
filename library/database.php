@@ -14,34 +14,71 @@ if ($isLocal) {
 } else {
     // PostgreSQL untuk production (Supabase)
     try {
-        // Extract project ref from host for pooler connection
-        $projectRef = '';
-        if (preg_match('/db\.([a-zA-Z0-9]+)\.supabase\.co/', $dbHost, $matches)) {
-            $projectRef = $matches[1];
-        }
+        // Get connection strategy from environment
+        $connectionStrategy = getEnv('DB_CONNECTION_STRATEGY', 'pooler_first');
         
-        // Try multiple connection approaches for better compatibility with Vercel
+        // Get pooler configuration from environment
+        $poolerHost = getEnv('DB_POOLER_HOST', 'aws-0-us-east-1.pooler.supabase.com');
+        $poolerPort = getEnv('DB_POOLER_PORT', '5432');
+        $poolerUser = getEnv('DB_POOLER_USER', $dbUser);
+        $poolerPass = getEnv('DB_POOLER_PASSWORD', $dbPass);
+        $poolerName = getEnv('DB_POOLER_NAME', $dbName);
+        
+        // Alternative pooler configurations
+        $poolerHost2 = getEnv('DB_POOLER_HOST_2', 'aws-0-us-east-1.pooler.supabase.com');
+        $poolerPort2 = getEnv('DB_POOLER_PORT_2', '6543');
+        $poolerHost3 = getEnv('DB_POOLER_HOST_3', 'aws-0-us-west-2.pooler.supabase.com');
+        $poolerPort3 = getEnv('DB_POOLER_PORT_3', '5432');
+        $poolerHost4 = getEnv('DB_POOLER_HOST_4', 'aws-0-us-west-2.pooler.supabase.com');
+        $poolerPort4 = getEnv('DB_POOLER_PORT_4', '6543');
+        
+        // Build connection attempts based on strategy
         $connectionAttempts = [];
         
-        // For Supabase, try pooler connections first (better for serverless)
-        if ($projectRef) {
-            $connectionAttempts[] = "pgsql:host=aws-0-us-east-1.pooler.supabase.com;port=5432;dbname=$dbName;sslmode=require";
-            $connectionAttempts[] = "pgsql:host=aws-0-us-east-1.pooler.supabase.com;port=6543;dbname=$dbName;sslmode=require";
-            $connectionAttempts[] = "pgsql:host=aws-0-us-west-2.pooler.supabase.com;port=5432;dbname=$dbName;sslmode=require";
-            $connectionAttempts[] = "pgsql:host=aws-0-us-west-2.pooler.supabase.com;port=6543;dbname=$dbName;sslmode=require";
+        switch ($connectionStrategy) {
+            case 'pooler_first':
+                // Try pooler connections first, then direct
+                $connectionAttempts[] = ["pgsql:host=$poolerHost;port=$poolerPort;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                $connectionAttempts[] = ["pgsql:host=$poolerHost2;port=$poolerPort2;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                $connectionAttempts[] = ["pgsql:host=$poolerHost3;port=$poolerPort3;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                $connectionAttempts[] = ["pgsql:host=$poolerHost4;port=$poolerPort4;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                $connectionAttempts[] = ["pgsql:host=$dbHost;port=$dbPort;dbname=$dbName;sslmode=require", $dbUser, $dbPass];
+                $connectionAttempts[] = ["pgsql:host=$dbHost;port=$dbPort;dbname=$dbName;sslmode=prefer", $dbUser, $dbPass];
+                break;
+                
+            case 'direct_first':
+                // Try direct connection first, then pooler
+                $connectionAttempts[] = ["pgsql:host=$dbHost;port=$dbPort;dbname=$dbName;sslmode=require", $dbUser, $dbPass];
+                $connectionAttempts[] = ["pgsql:host=$dbHost;port=$dbPort;dbname=$dbName;sslmode=prefer", $dbUser, $dbPass];
+                $connectionAttempts[] = ["pgsql:host=$poolerHost;port=$poolerPort;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                $connectionAttempts[] = ["pgsql:host=$poolerHost2;port=$poolerPort2;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                break;
+                
+            case 'pooler_only':
+                // Only try pooler connections
+                $connectionAttempts[] = ["pgsql:host=$poolerHost;port=$poolerPort;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                $connectionAttempts[] = ["pgsql:host=$poolerHost2;port=$poolerPort2;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                $connectionAttempts[] = ["pgsql:host=$poolerHost3;port=$poolerPort3;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                $connectionAttempts[] = ["pgsql:host=$poolerHost4;port=$poolerPort4;dbname=$poolerName;sslmode=require", $poolerUser, $poolerPass];
+                break;
+                
+            case 'direct_only':
+            default:
+                // Only try direct connection
+                $connectionAttempts[] = ["pgsql:host=$dbHost;port=$dbPort;dbname=$dbName;sslmode=require", $dbUser, $dbPass];
+                $connectionAttempts[] = ["pgsql:host=$dbHost;port=$dbPort;dbname=$dbName;sslmode=prefer", $dbUser, $dbPass];
+                $connectionAttempts[] = ["pgsql:host=$dbHost;port=$dbPort;dbname=$dbName", $dbUser, $dbPass];
+                break;
         }
-        
-        // Fallback to direct connection
-        $connectionAttempts[] = "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName;sslmode=require";
-        $connectionAttempts[] = "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName;sslmode=prefer";
-        $connectionAttempts[] = "pgsql:host=$dbHost;port=" . getEnv('DB_PORT', '5432') . ";dbname=$dbName";
         
         $lastException = null;
         $dbConn = null;
         
-        foreach ($connectionAttempts as $dsn) {
+        foreach ($connectionAttempts as $attempt) {
             try {
-                $dbConn = new PDO($dsn, $dbUser, $dbPass, [
+                list($dsn, $user, $pass) = $attempt;
+                
+                $dbConn = new PDO($dsn, $user, $pass, [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
