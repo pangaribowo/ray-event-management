@@ -23,22 +23,5 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ],
-  "env": {
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "DB_HOST": "@db_host",
-    "DB_PORT": "@db_port",
-    "DB_NAME": "@db_name",
-    "DB_USER": "@db_user",
-    "DB_PASSWORD": "@db_password",
-    "APP_ENV": "production",
-    "APP_DEBUG": "false"
-  },
-  "build": {
-    "env": {
-      "APP_ENV": "production"
-    }
-  }
+  ]
 }
