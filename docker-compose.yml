@@ -1,27 +1,70 @@
 version: '3.8'
+
 services:
   web:
-    image: php:8.1-apache
+    build: .
     container_name: php-web
+    environment:
+      - DOCKERIZED=true
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
     volumes:
       - ./:/var/www/html
     ports:
       - "8080:80"
     depends_on:
       - db
+    networks:
+      - app-network
+
   db:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: mysql-db
     restart: always
     environment:
-      MYSQL_DATABASE: db_event_projek
-      MYSQL_USER: root
-      MYSQL_PASSWORD: ''
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./db-script/db_event_projek.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - app-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: ${PMA_HOST}
+      PMA_PORT: ${DB_PORT}
+      PMA_USER: ${PMA_USER}
+      PMA_PASSWORD: ${PMA_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      PMA_ARBITRARY: 1
+      PMA_ABSOLUTE_URI: http://localhost:8081/
+      UPLOAD_LIMIT: ${MAX_UPLOAD_SIZE}
+      MEMORY_LIMIT: ${MEMORY_LIMIT}
+      MAX_EXECUTION_TIME: ${MAX_EXECUTION_TIME}
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - app-network
+
 volumes:
-  db_data: 
+  db_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
