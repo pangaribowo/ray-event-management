@@ -12,6 +12,7 @@ docker-compose.override.yml
 
 # Database
 *.sql
+!supabase-migration.sql
 *.db
 *.sqlite
 *.sqlite3
