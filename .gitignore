@@ -1,0 +1,88 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+.env.test
+
+# Docker
+.docker/
+docker-compose.override.yml
+.dockerignore
+
+# Database
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+db_data/
+
+# PHP
+vendor/
+composer.phar
+composer.lock
+.phpunit.result.cache
+phpunit.xml
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+storage/logs/
+
+# Cache
+cache/
+tmp/
+temp/
+.cache/
+
+# Session files
+sessions/
+*.sess
+
+# Upload directories
+uploads/
+files/
+images/user-uploads/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js (jika menggunakan build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Sensitive files
+config/secrets.php
+*.pem
+*.key
+*.crt
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
