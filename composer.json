@@ -1,0 +1,16 @@
+{
+    "name": "bakung/event-management-system",
+    "description": "Event Management System with Supabase Database",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.0"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

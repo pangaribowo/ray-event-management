@@ -37,19 +37,36 @@ function doLogin()
 	
 	$errorMessage = '';
 	
-	//$sql 	= "SELECT * FROM tbl_frontdesk_users WHERE username = '$name' AND pwd = PASSWORD('$pwd')";
-	$sql 	= "SELECT * FROM tbl_users WHERE name = '$name' AND pwd = '$pwd'";
+	// Coba tabel users yang baru terlebih dahulu
+	$sql = "SELECT * FROM users WHERE name = '$name'";
 	$result = dbQuery($sql);
 	
 	if (dbNumRows($result) == 1) {
 		$row = dbFetchAssoc($result);
-		$_SESSION['calendar_fd_user'] = $row;
-		$_SESSION['calendar_fd_user_name'] = $row['username'];
-		header('Location: index.php');
-		exit();
-	}
-	else {
-		$errorMessage = 'Invalid username / passsword. Please try again or contact to support.';
+		// Cek password dengan hashing
+		if (password_verify($pwd, $row['pwd'])) {
+			$_SESSION['calendar_fd_user'] = $row;
+			$_SESSION['calendar_fd_user']['type'] = strtolower($row['role']); // Untuk kompatibilitas
+			$_SESSION['calendar_fd_user_name'] = $row['name'];
+			header('Location: index.php');
+			exit();
+		} else {
+			$errorMessage = 'Invalid username / password. Please try again or contact support.';
+		}
+	} else {
+		// Fallback ke tabel lama jika tidak ditemukan di tabel baru
+		$sql = "SELECT * FROM tbl_users WHERE name = '$name' AND pwd = '$pwd'";
+		$result = dbQuery($sql);
+		
+		if (dbNumRows($result) == 1) {
+			$row = dbFetchAssoc($result);
+			$_SESSION['calendar_fd_user'] = $row;
+			$_SESSION['calendar_fd_user_name'] = $row['name'];
+			header('Location: index.php');
+			exit();
+		} else {
+			$errorMessage = 'Invalid username / password. Please try again or contact support.';
+		}
 	}
 	return $errorMessage;
 }
@@ -72,24 +89,44 @@ function getBookingRecords(){
 	$per_page = 10;
 	$page = (isset($_GET['page']) && $_GET['page'] != '') ? $_GET['page'] : 1;
 	$start 	= ($page-1)*$per_page;
-	$sql 	= "SELECT u.id AS uid, u.name, u.phone, u.email,
-			   r.ucount, r.rdate, r.status, r.comments   
-			   FROM tbl_users u, tbl_reservations r 
-			   WHERE u.id = r.uid  
-			   ORDER BY r.id DESC LIMIT $start, $per_page";
-	//echo $sql;
+	
+	$sql = "SELECT 
+				eb.id,
+				eb.event_name,
+				eb.business_block_id as block_id,
+				eb.function_space,
+				DATE(eb.start_datetime) as res_date,
+				TIME(eb.start_datetime) as time_start,
+				TIME(eb.end_datetime) as time_end,
+				eb.pax as count,
+				eb.rental,
+				eb.status,
+				bb.account_name,
+				bb.owner_event as owner_name,
+				bb.owner_id as user_id
+			FROM event_bookings eb
+			LEFT JOIN tbl_business_blocks bb ON eb.business_block_id = bb.id
+			ORDER BY eb.id DESC 
+			LIMIT $start, $per_page";
+	
 	$result = dbQuery($sql);
 	$records = array();
 	while($row = dbFetchAssoc($result)) {
 		extract($row);
-		$records[] = array("user_id" => $uid,
-							"user_name" => $name,
-							"user_phone" => $phone,
-							"user_email" => $email,
-							"count" => $ucount,
-							"res_date" => $rdate,
-							"status" => $status,
-							"comments" => $comments);	
+		$records[] = array(
+			"user_id" => $user_id,
+			"owner_name" => $owner_name,
+			"block_id" => $block_id,
+			"account_name" => $account_name,
+			"event_name" => $event_name,
+			"function_space" => $function_space,
+			"res_date" => $res_date,
+			"time_start" => $time_start,
+			"time_end" => $time_end,
+			"count" => $count,
+			"rental" => $rental,
+			"status" => $status
+		);	
 	}//while
 	return $records;
 }
@@ -100,27 +137,27 @@ function getUserRecords(){
 	$page = (isset($_GET['page']) && $_GET['page'] != '') ? $_GET['page'] : 1;
 	$start 	= ($page-1)*$per_page;
 	
-	$type = $_SESSION['calendar_fd_user']['type'];
-	if($type == 'student') {
-		$id = $_SESSION['calendar_fd_user']['id'];
-		$sql = "SELECT  * FROM tbl_users u WHERE type != 'admin' AND id = $id ORDER BY u.id DESC";
+	$type = $_SESSION['calendar_fd_user']['type'] ?? 'sales';
+	if($type == 'sales') {
+		$id = $_SESSION['calendar_fd_user']['id'] ?? 1;
+		$sql = "SELECT  * FROM users u WHERE role != 'Admin' AND id = $id ORDER BY u.id DESC";
 	}
 	else {
-		$sql = "SELECT  * FROM tbl_users u WHERE type != 'admin' ORDER BY u.id DESC LIMIT $start, $per_page";
+		$sql = "SELECT  * FROM users u WHERE role != 'Admin' ORDER BY u.id DESC LIMIT $start, $per_page";
 	}
 	
-	//echo $sql;
 	$result = dbQuery($sql);
 	$records = array();
 	while($row = dbFetchAssoc($result)) {
 		extract($row);
-		$records[] = array("user_id" => $id,
+		$records[] = array(
+			"user_id" => $id,
 			"user_name" => $name,
 			"user_phone" => $phone,
 			"user_email" => $email,
-			"type" => $type,
-			"status" => $status,
-			"bdate" => $bdate
+			"type" => $role,
+			"status" => 'active', // Default status karena tidak ada field status di tabel users baru
+			"bdate" => $created_at ?? date('Y-m-d H:i:s')
 		);	
 	}
 	return $records;

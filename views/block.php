@@ -6,11 +6,11 @@ $type = $_SESSION['calendar_fd_user']['type'] ?? '';
 $utype = ($type == 'admin') ? 'on' : 'off';
 
 if ($search !== '') {
-    $stmt = $dbConn->prepare("SELECT * FROM business_blocks_id WHERE block_name LIKE ? OR account_name LIKE ? ORDER BY start_date DESC");
+    $stmt = $dbConn->prepare("SELECT * FROM tbl_business_blocks WHERE block_name LIKE ? OR account_name LIKE ? ORDER BY start_date DESC");
     $likeSearch = "%" . $search . "%";
     $stmt->bind_param("ss", $likeSearch, $likeSearch);
 } else {
-    $stmt = $dbConn->prepare("SELECT * FROM business_blocks_id ORDER BY start_date DESC");
+    $stmt = $dbConn->prepare("SELECT * FROM tbl_business_blocks ORDER BY start_date DESC");
 }
 $stmt->execute();
 $result = $stmt->get_result();
@@ -23,7 +23,6 @@ $result = $stmt->get_result();
       <h3 class="box-title">Daftar Business Block</h3>
     </div>
 
-    <form role="form" action="<?php echo WEB_ROOT; ?>views/blockform.php" method="post">
     <div class="box-body">
       <form class="form-inline" onsubmit="return false;" style="margin-bottom: 20px;">
         <div class="form-group">
@@ -70,7 +69,7 @@ $result = $stmt->get_result();
                 <td><?= htmlspecialchars($row['block_name']) ?></td>
                 <td><?= htmlspecialchars($row['account_name']) ?></td>
                 <td><?= htmlspecialchars($row['owner_event']) ?></td>
-                <td><?= date('d M Y', strtotime($row['date_start'])) ?> - <?= date('d M Y', strtotime($row['date_end'])) ?></td>
+                <td><?= date('d M Y', strtotime($row['start_date'])) ?> - <?= date('d M Y', strtotime($row['end_date'])) ?></td>
                 <td><span class="label label-<?= $labelClass ?>"><?= htmlspecialchars($row['status']) ?></span></td>
                 <td><a href="block_detail.php?id=<?= urlencode($row['id']) ?>" class="btn btn-sm btn-info">Detail</a></td>
                 <?php if ($utype == 'on'): ?>

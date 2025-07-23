@@ -27,8 +27,8 @@
        <!-- Input Password -->
       <div class="form-group">
         <label for="password">Password</label>
-        <span id="sprytf_name">
-          <input type="text" password="password" class="form-control input-sm" placeholder="Password">
+        <span id="sprytf_password">
+          <input type="password" name="password" class="form-control input-sm" placeholder="Password" required>
           <span class="textfieldRequiredMsg">Password is required.</span>
           <span class="textfieldMinCharsMsg">Password must contain letters and numbers.</span>
         </span>

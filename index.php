@@ -39,42 +39,42 @@ switch ($cmd) {
 
 switch ($view) {
     case 'LIST':
-        $content = 'eventlist.php';
+        $content = 'views/eventlist.php';
         $pageTitle = 'View Event Details';
         break;
 
     case 'NOTES':
-        $content = 'eventnotes.php';
+        $content = 'views/eventnotes.php';
         $pageTitle = 'Create Notes';
         break;
 
     case 'USERS':
-        $content = 'userlist.php';
+        $content = 'views/userlist.php';
         $pageTitle = 'View User Details';
         break;
 
     case 'USER':
-        $content = 'user.php';
+        $content = 'views/user.php';
         $pageTitle = 'View User Details';
         break;
 
     case 'CREATE':
-        $content = 'userform.php';
+        $content = 'views/userform.php';
         $pageTitle = 'Create New User';
         break;
 
     case 'BLOCK':
-        $content = 'block.php';
+        $content = 'views/block.php';
         $pageTitle = 'View Block Details';
         break;
 
     case 'BLOCK_CREATE':
-        $content = 'blockform.php';
+        $content = 'views/blockform.php';
         $pageTitle = 'Create New Block';
         break;
 
     default:
-        $content = 'dashboard.php';
+        $content = 'views/dashboard.php';
         $pageTitle = 'Calendar Dashboard';
 }
 
@@ -112,11 +112,15 @@ function changeStatus() {
 
 function createEvent() {
     $eventName = $_POST['event_name'];
-    $blockId   = $_POST['block_id'];
-    $owner     = $_POST['owner'];
+    $blockId   = $_POST['business_block_id'];
+    $functionSpace = $_POST['function_space'] ?? '';
+    $startDatetime = $_POST['start_datetime'];
+    $endDatetime = $_POST['end_datetime'];
+    $pax = $_POST['pax'] ?? 0;
+    $rental = $_POST['rental'] ?? 'Exclude';
 
-    $sql = "INSERT INTO tbl_events (event_name, block_id, owner)
-            VALUES ('$eventName', '$blockId', '$owner')";
+    $sql = "INSERT INTO event_bookings (business_block_id, event_name, function_space, start_datetime, end_datetime, pax, rental)
+            VALUES ('$blockId', '$eventName', '$functionSpace', '$startDatetime', '$endDatetime', '$pax', '$rental')";
     dbQuery($sql);
 
     header('Location: ../views/?v=LIST&msg=' . urlencode('Event successfully created.'));
@@ -125,11 +129,17 @@ function createEvent() {
 
 function createBlock() {
     $blockName = $_POST['block_name'];
+    $accountType = $_POST['account_type'] ?? 'Company';
+    $accountName = $_POST['account_name'] ?? '';
+    $address = $_POST['address'] ?? '';
+    $phone = $_POST['phone'] ?? '';
+    $ownerEvent = $_POST['owner_event'] ?? '';
     $startDate = $_POST['start_date'];
     $endDate   = $_POST['end_date'];
+    $ownerId = $_SESSION['calendar_fd_user']['id'] ?? 1;
 
-    $sql = "INSERT INTO business_blocks_id (block_name, start_date, end_date)
-            VALUES ('$blockName', '$startDate', '$endDate')";
+    $sql = "INSERT INTO tbl_business_blocks (block_name, account_type, account_name, address, phone, owner_event, start_date, end_date, owner_id)
+            VALUES ('$blockName', '$accountType', '$accountName', '$address', '$phone', '$ownerEvent', '$startDate', '$endDate', '$ownerId')";
     dbQuery($sql);
 
     header('Location: ../views/?v=BLOCK&msg=' . urlencode('Block successfully created.'));
@@ -137,10 +147,12 @@ function createBlock() {
 }
 
 function addNotes() {
-    $notes = $_POST['notes'];
+    $eventBookingId = $_POST['event_booking_id'];
+    $department = $_POST['department'];
+    $note = $_POST['note'];
 
-    $sql = "INSERT INTO event_notes (notes, created_at)
-            VALUES ('$notes', NOW())";
+    $sql = "INSERT INTO event_notes (event_booking_id, department, note)
+            VALUES ('$eventBookingId', '$department', '$note')";
     dbQuery($sql);
 
     header('Location: ../views/?v=NOTES&msg=' . urlencode('Note added.'));
