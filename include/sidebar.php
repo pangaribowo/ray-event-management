@@ -7,9 +7,9 @@
                 <i class="fa fa-home"></i> <span>Dashboard</span>
             </a>
         </li>
-    <li class="treeview"> 
+    <!-- <li class="treeview"> 
 		<a href="<?php echo WEB_ROOT; ?>views/?v=DB"><i class="fa fa-calendar"></i><span>Events Calendar</span></a>
-	</li>
+	</li> -->
     <li class="treeview"> 
 		<a href="<?php echo WEB_ROOT; ?>views/?v=LIST"><i class="fa fa-newspaper-o"></i><span>Events Booking</span></a>
 	</li>
